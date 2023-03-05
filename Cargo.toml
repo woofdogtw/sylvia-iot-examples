@@ -1,0 +1,6 @@
+[workspace]
+
+members = [
+  "lora-ifroglab",
+  "app-demo",
+]
