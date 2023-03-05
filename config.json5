@@ -1,0 +1,27 @@
+{
+    "log": {
+        "level": "info",    // none, debug, [info], warn, error
+        "style": "log4j",   // [json], log4j
+    },
+    "server": {
+        "httpPort": 1080,
+        "httpsPort": 1443,
+        "cacertFile": "/etc/ssl/certs/ca-certificates.crt",
+        "certFile": "/home/user/rust-win/conf/certs/sylvia-iot.crt",
+        "keyFile": "/home/user/rust-win/conf/certs/sylvia-iot.key",
+        "staticPath": "/home/user/rust-win/static",
+    },
+    "loraIfroglab": {
+        "unit": "demo",             // unit code
+        "code": "lora-ifroglab",    // network code
+        "mqUri": "amqp://network.demo.lora-ifroglab:password@localhost/network.demo.lora-ifroglab",   // message queue URI
+        "devPath": "/dev/ttyACM0",
+        "freq": 91500,  // unit is 10kHz
+        "power": 0,     // 0~15 for 2~17 dBm
+    },
+    "appDemo": {
+        "unit": "demo",     // unit code
+        "code": "test-app", // application code
+        "mqUri": "amqp://application.demo.test-app:password@localhost/application.demo.test-app",   // message queue URI
+    },
+}
