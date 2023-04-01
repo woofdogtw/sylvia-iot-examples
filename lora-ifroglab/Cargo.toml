@@ -13,16 +13,16 @@ actix-http = "3.3.1"
 actix-web = { version = "4.3.1", default-features = false, features = ["rustls"] }
 async-trait = "0.1.68"
 chrono = { version = "0.4.24" }
-clap = { version = "4.1.13", default-features = false, features = ["std", "help", "usage", "error-context"] }
-general-mq = "0.0.5"
+clap = { version = "4.2.1", default-features = false, features = ["std", "help", "usage", "error-context"] }
+general-mq = "0.0.6"
 hex = "0.4.3"
 json5 = "0.4.1"
 log = "0.4.17"
 rustls = "0.20.8"
 rustls-pemfile = "1.0.2"
-serde = { version = "1.0.158", features = ["derive"] }
-serde_json = "1.0.94"
-sylvia-iot-sdk = "0.0.5"
-tokio = { version = "1.26.0", features = ["io-util", "macros", "rt-multi-thread", "time"] }
+serde = { version = "1.0.159", features = ["derive"] }
+serde_json = "1.0.95"
+sylvia-iot-sdk = "0.0.6"
+tokio = { version = "1.27.0", features = ["io-util", "macros", "rt-multi-thread", "time"] }
 tokio-serial = "5.4.4"
 url = "2.3.1"
