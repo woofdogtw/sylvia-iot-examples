@@ -10,7 +10,10 @@ use chrono::Utc;
 use log::{error, info};
 use sylvia_iot_sdk::{
     mq::{
-        network::{DlData as NetDlData, DlDataResult as NetDlDataResult, EventHandler, NetworkMgr},
+        network::{
+            DlData as NetDlData, DlDataResult as NetDlDataResult, EventHandler, NetworkCtrlMsg,
+            NetworkMgr,
+        },
         MgrStatus,
     },
     util::strings,
@@ -65,6 +68,14 @@ impl EventHandler for MgrHandler {
         if let Err(e) = mgr.send_dldata_result(&result) {
             error!("[{}] send result {} error: {}", FN_NAME, result.data_id, e);
         }
+
+        Ok(())
+    }
+
+    async fn on_ctrl(&self, _mgr: &NetworkMgr, _data: Box<NetworkCtrlMsg>) -> Result<(), ()> {
+        const FN_NAME: &'static str = "MgrHandler::on_ctrl";
+
+        info!("[{}] receive data", FN_NAME);
 
         Ok(())
     }
