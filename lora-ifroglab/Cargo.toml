@@ -1,6 +1,6 @@
 [package]
 name = "lora-ifroglab"
-version = "0.0.9"
+version = "0.0.10"
 authors = ["Chien-Hong Chan"]
 edition = "2021"
 description = "A simple LoRa network server implementation for Sylvia-IoT using iFrogLab LoRa USB dongle devices."
@@ -11,18 +11,18 @@ actix-cors = "0.6.4"
 actix-files = "0.6.2"
 actix-http = "3.3.1"
 actix-web = { version = "4.3.1", default-features = false, features = ["rustls"] }
-async-trait = "0.1.68"
+async-trait = "0.1.72"
 chrono = { version = "0.4.26" }
-clap = { version = "4.3.1", default-features = false, features = ["std", "help", "usage", "error-context"] }
-general-mq = "0.0.14"
+clap = { version = "4.3.19", default-features = false, features = ["std", "help", "usage", "error-context"] }
+general-mq = "0.0.19"
 hex = "0.4.3"
 json5 = "0.4.1"
-log = "0.4.18"
+log = "0.4.19"
 rustls = "0.20.8"
-rustls-pemfile = "1.0.2"
-serde = { version = "1.0.163", features = ["derive"] }
-serde_json = "1.0.96"
-sylvia-iot-sdk = "0.0.14"
-tokio = { version = "1.28.2", features = ["io-util", "macros", "rt-multi-thread", "time"] }
+rustls-pemfile = "1.0.3"
+serde = { version = "1.0.174", features = ["derive"] }
+serde_json = "1.0.103"
+sylvia-iot-sdk = "0.0.19"
+tokio = { version = "1.29.1", features = ["io-util", "macros", "rt-multi-thread", "time"] }
 tokio-serial = "5.4.4"
-url = "2.3.1"
+url = "2.4.0"
