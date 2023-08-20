@@ -45,7 +45,7 @@ impl EventHandler for MgrHandler {
             time: strings::time_str(&Utc::now()),
             publish: strings::time_str(&data.publish),
             sent: "".to_string(),
-            data: data.data,
+            data: hex::encode(&data.data),
             network_addr: data.network_addr.clone(),
         };
 

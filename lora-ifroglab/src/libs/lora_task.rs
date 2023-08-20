@@ -161,14 +161,14 @@ fn create_event_loop(task: LoraTask) -> JoinHandle<()> {
             let uldata = NetUlData {
                 time: Utc::now(),
                 network_addr: addr.clone(),
-                data: hex::encode(rx_data.payload.as_slice()),
+                data: rx_data.payload,
                 extension: Some(extension),
             };
             {
                 let api_data = UlData {
                     time: strings::time_str(&uldata.time),
                     network_addr: addr.clone(),
-                    data: uldata.data.clone(),
+                    data: hex::encode(&uldata.data),
                     extension: UlDataExt {
                         rssi: read_data.rssi,
                     },

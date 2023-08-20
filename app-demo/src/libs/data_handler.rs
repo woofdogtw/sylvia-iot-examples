@@ -50,7 +50,7 @@ impl EventHandler for MgrHandler {
             publish: strings::time_str(&data.publish),
             network_code: data.network_code,
             network_addr: data.network_addr,
-            data: data.data,
+            data: hex::encode(&data.data),
             rssi: match data.extension {
                 None => None,
                 Some(ext) => match ext.get("rssi") {

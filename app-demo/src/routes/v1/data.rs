@@ -83,7 +83,15 @@ async fn post_dldata(body: web::Json<PostDlDataReq>, state: web::Data<State>) ->
         device_id: None,
         network_code: Some(data.network_code.clone()),
         network_addr: Some(data.network_addr.clone()),
-        data: data.data.clone(),
+        data: match hex::decode(&data.data) {
+            Err(e) => {
+                return Err(ErrResp::ErrParam(Some(format!(
+                    "`data` is not hexadecimal string: {}",
+                    e
+                ))));
+            }
+            Ok(data) => data,
+        },
         extension: None,
     };
 
