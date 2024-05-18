@@ -1,13 +1,13 @@
-use actix_web::{dev::HttpServiceFactory, web, HttpResponse, Responder};
+use axum::{extract::State, http::StatusCode, response::IntoResponse, routing, Router};
 use chrono::Utc;
 use log::error;
 use serde::{Deserialize, Serialize};
 use sylvia_iot_sdk::{
     mq::application::DlData as AppDlData,
-    util::{err::ErrResp, strings},
+    util::{err::ErrResp, http::Json, strings},
 };
 
-use super::super::State;
+use super::super::State as AppState;
 use crate::libs::{DlData, UlData, MAX_DATA};
 
 #[derive(Deserialize)]
@@ -34,36 +34,39 @@ struct GetDlDataRes {
     data: Vec<DlData>,
 }
 
-pub fn new_service(scope_path: &str) -> impl HttpServiceFactory {
-    web::scope(scope_path)
-        .service(web::resource("/uldata").route(web::get().to(get_uldata)))
-        .service(
-            web::resource("/dldata")
-                .route(web::get().to(get_dldata))
-                .route(web::post().to(post_dldata)),
-        )
+pub fn new_service(scope_path: &str, state: &AppState) -> Router {
+    Router::new().nest(
+        scope_path,
+        Router::new()
+            .route("/uldata", routing::get(get_uldata))
+            .route("/dldata", routing::get(get_dldata).post(post_dldata))
+            .with_state(state.clone()),
+    )
 }
 
 /// `GET /{base}/api/v1/data/uldata`
-async fn get_uldata(state: web::Data<State>) -> impl Responder {
+async fn get_uldata(State(state): State<AppState>) -> impl IntoResponse {
     let data: Vec<UlData> = {
         let mutex = state.latest_uldata.lock().unwrap();
         (*mutex).iter().map(|x| x.clone()).collect()
     };
-    HttpResponse::Ok().json(&GetUlDataRes { data })
+    Json(GetUlDataRes { data })
 }
 
 /// `GET /{base}/api/v1/data/dldata`
-async fn get_dldata(state: web::Data<State>) -> impl Responder {
+async fn get_dldata(State(state): State<AppState>) -> impl IntoResponse {
     let data: Vec<DlData> = {
         let mutex = state.latest_dldata.lock().unwrap();
         (*mutex).iter().map(|x| x.clone()).collect()
     };
-    HttpResponse::Ok().json(&GetDlDataRes { data })
+    Json(GetDlDataRes { data })
 }
 
 /// `POST /{base}/api/v1/data/dldata`
-async fn post_dldata(body: web::Json<PostDlDataReq>, state: web::Data<State>) -> impl Responder {
+async fn post_dldata(
+    State(state): State<AppState>,
+    Json(body): Json<PostDlDataReq>,
+) -> impl IntoResponse {
     const FN_NAME: &'static str = "post_dldata";
     let now = Utc::now();
     let data = DlData {
@@ -112,5 +115,5 @@ async fn post_dldata(body: web::Json<PostDlDataReq>, state: web::Data<State>) ->
             ))));
         }
     }
-    Ok(HttpResponse::NoContent().finish())
+    Ok(StatusCode::NO_CONTENT)
 }

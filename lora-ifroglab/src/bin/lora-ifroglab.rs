@@ -1,29 +1,21 @@
 use std::{
     error::Error as StdError,
-    fs::{self, File},
-    io::{BufReader, Error as IoError, ErrorKind},
+    fs,
     net::{Ipv6Addr, SocketAddr, SocketAddrV6},
     time::Duration,
 };
 
-use actix_cors::Cors;
-use actix_files;
-use actix_http::KeepAlive;
-use actix_web::{
-    middleware::{Logger, NormalizePath},
-    App, HttpServer,
-};
+use axum::Router;
+use axum_server::{self, tls_rustls::RustlsConfig};
 use clap::{Arg as ClapArg, Command};
-use log::{self, error};
-use rustls::{Certificate, PrivateKey, ServerConfig};
-use rustls_pemfile;
+use log::{self, error, info};
 use serde::Deserialize;
-use tokio;
-
 use sylvia_iot_sdk::util::{
-    logger::{self, ACTIX_LOGGER_FORMAT},
+    logger::{self, LoggerLayer},
     server_config,
 };
+use tokio::{self, net::TcpListener};
+use tower_http::{cors::CorsLayer, normalize_path::NormalizePathLayer, timeout::TimeoutLayer};
 
 use lora_ifroglab::{libs, routes};
 
@@ -39,7 +31,6 @@ const PROJ_NAME: &'static str = env!("CARGO_PKG_NAME");
 const PROJ_VER: &'static str = env!("CARGO_PKG_VERSION");
 const HTTP_PORT: u16 = 6080;
 const HTTPS_PORT: u16 = 6443;
-const STATIC_PATH: &'static str = "./static";
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
@@ -59,7 +50,7 @@ async fn main() -> std::io::Result<()> {
 
     logger::init(PROJ_NAME, &conf.log);
 
-    let lora_ifroglab_state = match routes::new_state("/lora-ifroglab", &conf.lora_ifroglab).await {
+    let state = match routes::new_state("/lora-ifroglab", &conf.lora_ifroglab).await {
         Err(e) => {
             error!("[{}] new routes state error: {}", FN_NAME, e);
             return Ok(());
@@ -67,68 +58,77 @@ async fn main() -> std::io::Result<()> {
         Ok(state) => state,
     };
 
-    let mut serv = HttpServer::new(move || {
-        let static_path = match conf.server.static_path.as_ref() {
-            None => STATIC_PATH,
-            Some(path) => path.as_str(),
-        };
-        App::new()
-            .wrap(Logger::new(ACTIX_LOGGER_FORMAT))
-            .wrap(NormalizePath::trim())
-            .wrap(Cors::permissive())
-            .service(routes::new_service(&lora_ifroglab_state))
-            .service(actix_files::Files::new("/", static_path).index_file("index.html"))
-    })
-    .keep_alive(KeepAlive::Timeout(Duration::from_secs(60)));
+    let app = Router::new()
+        .merge(routes::new_service(&state))
+        .layer(TimeoutLayer::new(Duration::from_secs(60)))
+        .layer(CorsLayer::permissive())
+        .layer(NormalizePathLayer::trim_trailing_slash())
+        .layer(LoggerLayer::new());
+
+    // Serve HTTP.
     let ipv6_addr = Ipv6Addr::from([0u8; 16]);
-    let addrs = match conf.server.http_port {
-        None => [SocketAddr::V6(SocketAddrV6::new(
-            ipv6_addr, HTTP_PORT, 0, 0,
-        ))],
-        Some(port) => [SocketAddr::V6(SocketAddrV6::new(ipv6_addr, port, 0, 0))],
+    let http_addr = match conf.server.http_port {
+        None => SocketAddr::V6(SocketAddrV6::new(ipv6_addr, HTTP_PORT, 0, 0)),
+        Some(port) => SocketAddr::V6(SocketAddrV6::new(ipv6_addr, port, 0, 0)),
     };
-    serv = serv.bind(addrs.as_slice())?;
+
+    // Serve HTTPS.
     if let Some(cert_file) = conf.server.cert_file.as_ref() {
         if let Some(key_file) = conf.server.key_file.as_ref() {
-            let cert = rustls_pemfile::certs(&mut BufReader::new(File::open(cert_file)?))?
-                .into_iter()
-                .map(Certificate)
-                .collect();
-            let mut keys = match rustls_pemfile::pkcs8_private_keys(&mut BufReader::new(
-                File::open(key_file.as_str())?,
-            )) {
-                Err(_) => rustls_pemfile::rsa_private_keys(&mut BufReader::new(File::open(
-                    key_file.as_str(),
-                )?))?,
-                Ok(keys) => keys,
-            };
-            if keys.len() != 1 {
-                keys = rustls_pemfile::rsa_private_keys(&mut BufReader::new(File::open(
-                    key_file.as_str(),
-                )?))?;
-                if keys.len() != 1 {
-                    return Err(IoError::new(ErrorKind::InvalidData, "invalid private key"));
+            let config = match RustlsConfig::from_pem_file(cert_file, key_file).await {
+                Err(e) => {
+                    error!("[{}] read cert/key error: {}", FN_NAME, e);
+                    return Ok(());
                 }
-            }
-            let key = PrivateKey(keys[0].clone());
-            let secure_config = match ServerConfig::builder()
-                .with_safe_defaults()
-                .with_no_client_auth()
-                .with_single_cert(cert, key)
-            {
-                Err(e) => return Err(IoError::new(ErrorKind::InvalidData, e)),
-                Ok(conf) => conf,
+                Ok(config) => config,
             };
-            let addrs = match conf.server.https_port {
-                None => [SocketAddr::V6(SocketAddrV6::new(
-                    ipv6_addr, HTTPS_PORT, 0, 0,
-                ))],
-                Some(port) => [SocketAddr::V6(SocketAddrV6::new(ipv6_addr, port, 0, 0))],
+            let addr = match conf.server.https_port {
+                None => SocketAddr::V6(SocketAddrV6::new(ipv6_addr, HTTPS_PORT, 0, 0)),
+                Some(port) => SocketAddr::V6(SocketAddrV6::new(ipv6_addr, port, 0, 0)),
             };
-            serv = serv.bind_rustls_021(addrs.as_slice(), secure_config)?;
+            let http_app = app.clone();
+            let http_serv = tokio::spawn(async move {
+                axum_server::bind(http_addr)
+                    .serve(http_app.into_make_service_with_connect_info::<SocketAddr>())
+                    .await
+                    .unwrap()
+            });
+            let https_serv = tokio::spawn(async move {
+                axum_server::bind_rustls(addr, config)
+                    .serve(app.into_make_service_with_connect_info::<SocketAddr>())
+                    .await
+                    .unwrap()
+            });
+            info!(
+                "[{}] running {} service (v{})",
+                FN_NAME, PROJ_NAME, PROJ_VER
+            );
+            let _ = tokio::join!(http_serv, https_serv);
+            return Ok(());
         }
     }
-    serv.run().await
+
+    let listener = match TcpListener::bind(http_addr).await {
+        Err(e) => {
+            error!("[{}] bind addr {} error: {}", FN_NAME, http_addr, e);
+            return Ok(());
+        }
+        Ok(listener) => listener,
+    };
+    info!(
+        "[{}] running {} service (v{})",
+        FN_NAME, PROJ_NAME, PROJ_VER
+    );
+    if let Err(e) = axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .await
+    {
+        error!("[{}] launch server error: {}", FN_NAME, e);
+        return Ok(());
+    }
+    Ok(())
 }
 
 fn init_config() -> Result<AppConfig, Box<dyn StdError>> {

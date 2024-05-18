@@ -1,7 +1,8 @@
-use actix_web::{dev::HttpServiceFactory, web, HttpResponse, Responder};
+use axum::{extract::State, response::IntoResponse, routing, Router};
 use serde::{Deserialize, Serialize};
+use sylvia_iot_sdk::util::http::{Json, Path};
 
-use super::super::State;
+use super::super::State as AppState;
 use crate::libs::{DlData, UlData};
 
 #[derive(Deserialize)]
@@ -24,33 +25,40 @@ struct GetQueueRes {
     data: Vec<DlData>,
 }
 
-pub fn new_service(scope_path: &str) -> impl HttpServiceFactory {
-    web::scope(scope_path)
-        .service(web::resource("/uldata").route(web::get().to(get_uldata)))
-        .service(web::resource("/dldata").route(web::get().to(get_dldata)))
-        .service(web::resource("/queue/{network_addr}").route(web::get().to(get_queue)))
+pub fn new_service(scope_path: &str, state: &AppState) -> Router {
+    Router::new().nest(
+        scope_path,
+        Router::new()
+            .route("/uldata", routing::get(get_uldata))
+            .route("/dldata", routing::get(get_dldata))
+            .route("/queue/:network_addr", routing::get(get_queue))
+            .with_state(state.clone()),
+    )
 }
 
 /// `GET /{base}/api/v1/data/uldata`
-async fn get_uldata(state: web::Data<State>) -> impl Responder {
+async fn get_uldata(State(state): State<AppState>) -> impl IntoResponse {
     let data: Vec<UlData> = {
         let mutex = state.latest_uldata.lock().unwrap();
         (*mutex).iter().map(|x| x.clone()).collect()
     };
-    HttpResponse::Ok().json(&GetUlDataRes { data })
+    Json(GetUlDataRes { data })
 }
 
 /// `GET /{base}/api/v1/data/dldata`
-async fn get_dldata(state: web::Data<State>) -> impl Responder {
+async fn get_dldata(State(state): State<AppState>) -> impl IntoResponse {
     let data: Vec<DlData> = {
         let mutex = state.latest_dldata.lock().unwrap();
         (*mutex).iter().map(|x| x.clone()).collect()
     };
-    HttpResponse::Ok().json(&GetDlDataRes { data })
+    Json(GetDlDataRes { data })
 }
 
 /// `GET /{base}/api/v1/data/queue/{network_addr}`
-async fn get_queue(param: web::Path<GetQueueParam>, state: web::Data<State>) -> impl Responder {
+async fn get_queue(
+    State(state): State<AppState>,
+    Path(param): Path<GetQueueParam>,
+) -> impl IntoResponse {
     let data: Vec<DlData> = {
         let mutex = state.queue_dldata.lock().unwrap();
         match (*mutex).get(param.network_addr.as_str()) {
@@ -58,5 +66,5 @@ async fn get_queue(param: web::Path<GetQueueParam>, state: web::Data<State>) -> 
             Some(data) => data.iter().map(|x| x.clone()).collect(),
         }
     };
-    HttpResponse::Ok().json(&GetQueueRes { data })
+    Json(GetQueueRes { data })
 }

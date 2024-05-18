@@ -5,11 +5,8 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use actix_web::{dev::HttpServiceFactory, error, web};
-use sylvia_iot_sdk::{
-    mq::{network::NetworkMgr, Connection, Options as MgrOptions},
-    util::err::ErrResp,
-};
+use axum::Router;
+use sylvia_iot_sdk::mq::{network::NetworkMgr, Connection, Options as MgrOptions};
 use url::Url;
 
 mod v1;
@@ -91,14 +88,9 @@ pub async fn new_state(
 }
 
 /// To register service URIs in the specified root path.
-pub fn new_service(state: &State) -> impl HttpServiceFactory {
-    web::scope(state.scope_path)
-        .app_data(web::JsonConfig::default().error_handler(|err, _| {
-            error::ErrorBadRequest(ErrResp::ErrParam(Some(err.to_string())))
-        }))
-        .app_data(web::QueryConfig::default().error_handler(|err, _| {
-            error::ErrorBadRequest(ErrResp::ErrParam(Some(err.to_string())))
-        }))
-        .app_data(web::Data::new(state.clone()))
-        .service(v1::data::new_service("/api/v1/data"))
+pub fn new_service(state: &State) -> Router {
+    Router::new().nest(
+        state.scope_path,
+        Router::new().merge(v1::data::new_service("/api/v1/data", state)),
+    )
 }
