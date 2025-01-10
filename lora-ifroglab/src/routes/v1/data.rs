@@ -31,7 +31,7 @@ pub fn new_service(scope_path: &str, state: &AppState) -> Router {
         Router::new()
             .route("/uldata", routing::get(get_uldata))
             .route("/dldata", routing::get(get_dldata))
-            .route("/queue/:network_addr", routing::get(get_queue))
+            .route("/queue/{network_addr}", routing::get(get_queue))
             .with_state(state.clone()),
     )
 }
