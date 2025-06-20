@@ -10,11 +10,11 @@ use chrono::Utc;
 use log::{error, info};
 use sylvia_iot_sdk::{
     mq::{
+        MgrStatus,
         network::{
             DlData as NetDlData, DlDataResult as NetDlDataResult, EventHandler, NetworkCtrlMsg,
             NetworkMgr,
         },
-        MgrStatus,
     },
     util::strings,
 };

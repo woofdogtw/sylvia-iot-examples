@@ -1,4 +1,4 @@
-use axum::{extract::State, http::StatusCode, response::IntoResponse, routing, Router};
+use axum::{Router, extract::State, http::StatusCode, response::IntoResponse, routing};
 use chrono::Utc;
 use log::error;
 use serde::{Deserialize, Serialize};
@@ -8,7 +8,7 @@ use sylvia_iot_sdk::{
 };
 
 use super::super::State as AppState;
-use crate::libs::{DlData, UlData, MAX_DATA};
+use crate::libs::{DlData, MAX_DATA, UlData};
 
 #[derive(Deserialize)]
 struct PostDlDataReq {

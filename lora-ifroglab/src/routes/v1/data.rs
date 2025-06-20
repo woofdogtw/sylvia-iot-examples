@@ -1,4 +1,4 @@
-use axum::{extract::State, response::IntoResponse, routing, Router};
+use axum::{Router, extract::State, response::IntoResponse, routing};
 use serde::{Deserialize, Serialize};
 use sylvia_iot_sdk::util::http::{Json, Path};
 

@@ -14,7 +14,7 @@ use std::{
 use chrono::Utc;
 use hex;
 use log::{error, info, warn};
-use serde_json::{json, Map};
+use serde_json::{Map, json};
 use sylvia_iot_sdk::{
     mq::network::{DlDataResult, NetworkMgr, UlData as NetUlData},
     util::strings,
@@ -24,7 +24,7 @@ use tokio::{
     time,
 };
 
-use super::{lora_usb::IfroglabLora, DlData, UlData, UlDataExt, MAX_DATA};
+use super::{DlData, MAX_DATA, UlData, UlDataExt, lora_usb::IfroglabLora};
 
 pub struct Options {
     pub mgr: Arc<Mutex<NetworkMgr>>,

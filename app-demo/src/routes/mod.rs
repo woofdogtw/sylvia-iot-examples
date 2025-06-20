@@ -6,13 +6,13 @@ use std::{
 };
 
 use axum::Router;
-use sylvia_iot_sdk::mq::{application::ApplicationMgr, Connection, Options as MgrOptions};
+use sylvia_iot_sdk::mq::{Connection, Options as MgrOptions, application::ApplicationMgr};
 use url::Url;
 
 use crate::libs::{
+    DlData, UlData,
     config::{self, Config},
     data_handler::MgrHandler,
-    DlData, UlData,
 };
 
 mod v1;

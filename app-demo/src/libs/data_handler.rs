@@ -9,16 +9,16 @@ use async_trait::async_trait;
 use log::{info, warn};
 use sylvia_iot_sdk::{
     mq::{
+        MgrStatus,
         application::{
             ApplicationMgr, DlDataResp as AppDlDataResp, DlDataResult as AppDlDataResult,
             EventHandler, UlData as AppUlData,
         },
-        MgrStatus,
     },
     util::strings,
 };
 
-use super::{DlData, UlData, MAX_DATA};
+use super::{DlData, MAX_DATA, UlData};
 
 #[derive(Clone)]
 pub struct MgrHandler {

@@ -1,37 +1,37 @@
 [package]
 name = "app-demo"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Chien-Hong Chan"]
-edition = "2021"
+edition = "2024"
 description = "A simple application server for Sylvia-IoT demo."
 readme = "README.md"
 
 [dependencies]
-axum = "0.8.1"
-axum-server = { version = "0.7.1", features = ["tls-rustls"] }
-async-trait = "0.1.85"
-chrono = { version = "0.4.39" }
-clap = { version = "4.5.26", default-features = false, features = [
+axum = "0.8.4"
+axum-server = { version = "0.7.2", features = ["tls-rustls"] }
+async-trait = "0.1.88"
+chrono = { version = "0.4.41" }
+clap = { version = "4.5.40", default-features = false, features = [
     "std",
     "help",
     "usage",
     "error-context",
 ] }
-general-mq = "0.2.1"
+general-mq = "0.3.0"
 hex = "0.4.3"
 json5 = "0.4.1"
-log = "0.4.22"
-rustls = "0.23.21"
-serde = { version = "1.0.217", features = ["derive"] }
-serde_json = "1.0.135"
-sylvia-iot-sdk = "0.2.1"
-tokio = { version = "1.43.0", features = [
+log = "0.4.27"
+rustls = "0.23.28"
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.140"
+sylvia-iot-sdk = "0.3.0"
+tokio = { version = "1.45.1", features = [
     "io-util",
     "macros",
     "rt-multi-thread",
     "time",
 ] }
-tower-http = { version = "0.6.2", default-features = false, features = [
+tower-http = { version = "0.6.6", default-features = false, features = [
     "cors",
     "normalize-path",
     "timeout",

@@ -6,16 +6,16 @@ use std::{
 };
 
 use axum::Router;
-use sylvia_iot_sdk::mq::{network::NetworkMgr, Connection, Options as MgrOptions};
+use sylvia_iot_sdk::mq::{Connection, Options as MgrOptions, network::NetworkMgr};
 use url::Url;
 
 mod v1;
 
 use crate::libs::{
+    DlData, UlData,
     config::{self, Config},
     data_handler::MgrHandler,
     lora_task::{LoraTask, Options as TaskOptions},
-    DlData, UlData,
 };
 
 /// The resources used by this service.
