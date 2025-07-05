@@ -1,0 +1,94 @@
+name: Release Sylvia-IoT examples
+on:
+  push:
+    tags:
+      - v*
+env:
+  GHR_VER: v0.17.0
+  BIN_DIR: dist
+  SBOM_VER: v0.10.0
+  SBOM_DIR: sbom
+jobs:
+  release:
+    name: Publish GitHub Releases and Docker Hub
+    runs-on: ubuntu-24.04
+    env:
+      TARGET_X86_64: x86_64-unknown-linux-musl
+      TARGET_ARM64: aarch64-unknown-linux-musl
+    steps:
+      - name: Install tools
+        run: |
+          sudo apt update
+          sudo apt -y install gcc-aarch64-linux-gnu
+          cargo install cross --git https://github.com/cross-rs/cross
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - name: Clear release target for x86_64
+        run: |
+          rm -rf target/release
+      - name: Build app-demo x86_64
+        run: cross build -p app-demo --release --target ${TARGET_X86_64}
+      - name: Build lora-ifroglab x86_64
+        run: cross build -p lora-ifroglab --release --target ${TARGET_X86_64}
+      - name: Clear release target for arm64
+        run: |
+          rm -rf target/release
+      - name: Build app-demo arm64
+        run: cross build -p app-demo --release --target ${TARGET_ARM64}
+      - name: Build lora-ifroglab arm64
+        run: cross build -p lora-ifroglab --release --target ${TARGET_ARM64}
+      - name: Prepare assets
+        run: |
+          mkdir -p ${BIN_DIR}
+          BINARIES="app-demo lora-ifroglab"
+          for TARGET in ${TARGET_X86_64} ${TARGET_ARM64}; do
+            cd target/${TARGET}/release
+            cp $BINARIES ../../../${BIN_DIR}/
+            cd ../../../${BIN_DIR}
+            for BIN in $BINARIES; do
+              ARCH_SUFFIX=$(echo $TARGET | grep -q "aarch64" && echo "arm64" || echo "x86_64")
+              echo "Packing $BIN for $ARCH_SUFFIX"
+              if [ "$ARCH_SUFFIX" = "x86_64" ]; then
+                strip -o $BIN $BIN
+              elif [ "$ARCH_SUFFIX" = "arm64" ]; then
+                aarch64-linux-gnu-strip -o $BIN $BIN
+              fi
+              tar cf ${BIN}-${ARCH_SUFFIX}.tar $BIN
+              rm $BIN
+            done
+            cd ..
+          done
+          xz -z -9 -e ${BIN_DIR}/*
+      - name: Prepare SBOM
+        run: |
+          mkdir -p ${SBOM_DIR}
+          curl -kLo cargo-sbom https://github.com/psastras/sbom-rs/releases/download/cargo-sbom-${SBOM_VER}/cargo-sbom-x86_64-unknown-linux-gnu
+          chmod +x cargo-sbom
+          PKGS="app-demo lora-ifroglab"
+          FORMATS="spdx_json_2_3 cyclone_dx_json_1_4"
+          for PKG in $PKGS; do
+            for FMT in $FORMATS; do
+              EXT=$(echo $FMT | grep -q spdx && echo "spdx.json" || echo "cdx.json")
+              ./cargo-sbom --cargo-package $PKG --output-format $FMT > ${SBOM_DIR}/$PKG.$EXT
+            done
+          done
+          tar cf sbom.tar sbom
+          xz -z -9 -e sbom.tar
+          mv sbom.tar.xz ${BIN_DIR}/
+      - name: Prepare SHA256SUMS and VERSION
+        env:
+          RELEASE_VER: ${{ github.ref_name }}
+        run: |
+          cd ${BIN_DIR}
+          sha256sum * > SHA256SUMS
+          echo -n ${RELEASE_VER:1} > VERSION
+          cd ..
+      - name: Create releases, assets and version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl -LO https://github.com/tcnksm/ghr/releases/download/${GHR_VER}/ghr_${GHR_VER}_linux_amd64.tar.gz
+          tar xf ghr_${GHR_VER}_linux_amd64.tar.gz
+          ./ghr_${GHR_VER}_linux_amd64/ghr -u "${GITHUB_REPOSITORY%/*}" -r "${GITHUB_REPOSITORY#*/}" "${GITHUB_REF#refs/tags/}" ${BIN_DIR}
