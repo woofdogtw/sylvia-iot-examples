@@ -1,6 +1,6 @@
 [package]
 name = "lora-ifroglab"
-version = "0.3.5"
+version = "0.3.6"
 authors = ["Chien-Hong Chan"]
 edition = "2024"
 description = "A simple LoRa network server implementation for Sylvia-IoT using iFrogLab LoRa USB dongle devices."
@@ -11,20 +11,20 @@ axum = "0.8.4"
 axum-server = { version = "0.7.2", features = ["tls-rustls"] }
 async-trait = "0.1.89"
 chrono = { version = "0.4.42" }
-clap = { version = "4.5.47", default-features = false, features = [
+clap = { version = "4.5.48", default-features = false, features = [
     "std",
     "help",
     "usage",
     "error-context",
 ] }
-general-mq = "0.3.10"
+general-mq = "0.3.11"
 hex = "0.4.3"
 json5 = "0.4.1"
 log = "0.4.28"
 rustls = "0.23.32"
-serde = { version = "1.0.225", features = ["derive"] }
+serde = { version = "1.0.227", features = ["derive"] }
 serde_json = "1.0.145"
-sylvia-iot-sdk = "0.3.7"
+sylvia-iot-sdk = "0.3.11"
 tokio = { version = "1.47.1", features = [
     "io-util",
     "macros",
