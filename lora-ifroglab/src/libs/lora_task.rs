@@ -96,39 +96,19 @@ fn create_event_loop(task: LoraTask) -> JoinHandle<()> {
     task::spawn(async move {
         const FN_NAME: &'static str = "event_loop";
         let sleep_time = SLEEP_IDLE_MS;
-        // Connect to the USB dongle.
-        let (mut port, mut counter) = loop {
-            time::sleep(Duration::from_millis(SLEEP_IDLE_MS)).await;
-            let mut port = match IfroglabLora::new(task.opts.dev_path.as_str()) {
-                Err(e) => {
-                    error!("[{}] create port error: {}", FN_NAME, e);
-                    continue;
-                }
-                Ok(port) => port,
-            };
-            if let Err(e) = port
-                .cmd03_set_values(3, task.opts.freq, task.opts.power)
-                .await
-            {
-                error!("[{}] set RX mode error: {}", FN_NAME, e);
-                continue;
-            }
-            let counter = match port.cmd07_read_data_counter().await {
-                Err(e) => {
-                    error!("[{}] get counter error: {}", FN_NAME, e);
-                    continue;
-                }
-                Ok(counter) => counter,
-            };
-            break (port, counter);
-        };
-        info!("[{}] connected to port", FN_NAME);
         // Main loop.
+        let (mut port, mut counter) = connect_port(&task).await;
+        let mut port_connected = true;
         loop {
             time::sleep(Duration::from_millis(sleep_time)).await;
+            if !port_connected {
+                port_connected = true;
+                (port, counter) = connect_port(&task).await;
+            }
             counter = match port.cmd07_read_data_counter().await {
                 Err(e) => {
                     error!("[{}] get counter error: {}", FN_NAME, e);
+                    port_connected = false;
                     continue;
                 }
                 Ok(new_counter) => match counter == new_counter {
@@ -139,6 +119,7 @@ fn create_event_loop(task: LoraTask) -> JoinHandle<()> {
             let read_data = match port.cmd06_read_data().await {
                 Err(e) => {
                     error!("[{}] get counter error: {}", FN_NAME, e);
+                    port_connected = false;
                     continue;
                 }
                 Ok(data) => match data {
@@ -182,6 +163,7 @@ fn create_event_loop(task: LoraTask) -> JoinHandle<()> {
             {
                 if let Err(e) = task.queue_rsc.mgr.lock().unwrap().send_uldata(&uldata) {
                     error!("[{}] send uldata message error: {}", FN_NAME, e);
+                    port_connected = false;
                     continue;
                 }
             }
@@ -239,6 +221,7 @@ fn create_event_loop(task: LoraTask) -> JoinHandle<()> {
                     .await
                 {
                     error!("[{}] set back RX mode error: {}", FN_NAME, e);
+                    port_connected = false;
                 }
                 continue;
             }
@@ -249,6 +232,7 @@ fn create_event_loop(task: LoraTask) -> JoinHandle<()> {
                     .await
                 {
                     error!("[{}] set back RX mode error: {}", FN_NAME, e);
+                    port_connected = false;
                 }
                 continue;
             }
@@ -257,6 +241,7 @@ fn create_event_loop(task: LoraTask) -> JoinHandle<()> {
                 .await
             {
                 error!("[{}] set back RX mode error: {}", FN_NAME, e);
+                port_connected = false;
             }
             data.sent = strings::time_str(&Utc::now());
             {
@@ -281,4 +266,35 @@ fn parse_rx_data(raw: &[u8]) -> Result<RxData, IoError> {
         node_id: u32::from_be_bytes(dst),
         payload: raw[8..].to_vec(),
     })
+}
+
+async fn connect_port(task: &LoraTask) -> (IfroglabLora, u16) {
+    const FN_NAME: &'static str = "connect_port";
+
+    loop {
+        time::sleep(Duration::from_millis(SLEEP_IDLE_MS)).await;
+        let mut port = match IfroglabLora::new(task.opts.dev_path.as_str()) {
+            Err(e) => {
+                error!("[{}] create port error: {}", FN_NAME, e);
+                continue;
+            }
+            Ok(port) => port,
+        };
+        if let Err(e) = port
+            .cmd03_set_values(3, task.opts.freq, task.opts.power)
+            .await
+        {
+            error!("[{}] set RX mode error: {}", FN_NAME, e);
+            continue;
+        }
+        let counter = match port.cmd07_read_data_counter().await {
+            Err(e) => {
+                error!("[{}] get counter error: {}", FN_NAME, e);
+                continue;
+            }
+            Ok(counter) => counter,
+        };
+        info!("[{}] connected to port", FN_NAME);
+        break (port, counter);
+    }
 }

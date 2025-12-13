@@ -5,7 +5,7 @@ use std::{
     time::Duration,
 };
 
-use axum::Router;
+use axum::{Router, http::StatusCode};
 use axum_server::{self, tls_rustls::RustlsConfig};
 use clap::{Arg as ClapArg, Command};
 use log::{self, error, info};
@@ -60,7 +60,10 @@ async fn main() -> std::io::Result<()> {
 
     let app = Router::new()
         .merge(routes::new_service(&state))
-        .layer(TimeoutLayer::new(Duration::from_secs(60)))
+        .layer(TimeoutLayer::with_status_code(
+            StatusCode::REQUEST_TIMEOUT,
+            Duration::from_secs(60),
+        ))
         .layer(CorsLayer::permissive())
         .layer(NormalizePathLayer::trim_trailing_slash())
         .layer(LoggerLayer::new());
