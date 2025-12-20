@@ -1,6 +1,3 @@
 [workspace]
 
-members = [
-  "lora-ifroglab",
-  "app-demo",
-]
+members = ["app-demo", "dev-demo", "lora-ifroglab"]

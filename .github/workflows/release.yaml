@@ -30,6 +30,8 @@ jobs:
           rm -rf target/release
       - name: Build app-demo x86_64
         run: cross build -p app-demo --release --target ${TARGET_X86_64}
+      - name: Build dev-demo x86_64
+        run: cross build -p dev-demo --release --target ${TARGET_X86_64}
       - name: Build lora-ifroglab x86_64
         run: cross build -p lora-ifroglab --release --target ${TARGET_X86_64}
       - name: Clear release target for arm64
@@ -37,12 +39,14 @@ jobs:
           rm -rf target/release
       - name: Build app-demo arm64
         run: cross build -p app-demo --release --target ${TARGET_ARM64}
+      - name: Build dev-demo arm64
+        run: cross build -p dev-demo --release --target ${TARGET_ARM64}
       - name: Build lora-ifroglab arm64
         run: cross build -p lora-ifroglab --release --target ${TARGET_ARM64}
       - name: Prepare assets
         run: |
           mkdir -p ${BIN_DIR}
-          BINARIES="app-demo lora-ifroglab"
+          BINARIES="app-demo dev-demo lora-ifroglab"
           for TARGET in ${TARGET_X86_64} ${TARGET_ARM64}; do
             cd target/${TARGET}/release
             cp $BINARIES ../../../${BIN_DIR}/
@@ -66,7 +70,7 @@ jobs:
           mkdir -p ${SBOM_DIR}
           curl -kLo cargo-sbom https://github.com/psastras/sbom-rs/releases/download/cargo-sbom-${SBOM_VER}/cargo-sbom-x86_64-unknown-linux-gnu
           chmod +x cargo-sbom
-          PKGS="app-demo lora-ifroglab"
+          PKGS="app-demo dev-demo lora-ifroglab"
           FORMATS="spdx_json_2_3 cyclone_dx_json_1_4"
           for PKG in $PKGS; do
             for FMT in $FORMATS; do

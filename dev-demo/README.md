@@ -1,8 +1,15 @@
-# lora-ifroglab
+# dev-demo
 
-A simple LoRa network server implementation for Sylvia-IoT using [iFrogLab LoRa USB dongle](https://www.ifroglab.com/en/?product=ifroglab-lora-usb) devices.
+A simple LoRa device that will send uplink data with the following data:
 
-This project is used for demo only. No authorization within.
+- Temperature
+- Humidity
+- Pressure
+
+## Hardware
+
+- Board: Raspberry Pi 4 Model B with [Waveshare Sense HAT(B)](https://www.waveshare.net/wiki/Sense_HAT_(B))
+- LoRa module: [iFrogLab LoRa USB dongle](https://www.ifroglab.com/en/?product=ifroglab-lora-usb)
 
 # Protocol
 
@@ -21,12 +28,13 @@ iFrogLab LoRa USB dongle can send 16 bytes data each time. `lora-ifroglab` defin
 - (Reserved): used for future use. Must be zero.
 - Payload: variable length payload. Can be zero bytes.
 
-## RX/TX rules
+## Device Payload
 
-The gateway:
-- Normally RX.
-- Send node downlink data only after the gateway receives an uplink data from the node.
+We use 7 bytes to transfer device data (big-endian):
 
-The node:
-- Change to RX mode just after sending one uplink data.
-- The interval of two uplink data should at least one second for receiving its downlink data.
+- `byte[1:0]`: temperature.
+    - Temperature in Celsius: (175 * value) / 65536 - 45
+- `byte[3:2]`: humidity.
+    - Humidity in percentage: (100 * value) / 65536
+- `byte[6:4]`: pressure.
+    - Pressure in hPa: value / 4096

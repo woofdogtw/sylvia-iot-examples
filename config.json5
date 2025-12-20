@@ -15,7 +15,7 @@
         "unit": "demo",             // unit code
         "code": "lora-ifroglab",    // network code
         "mqUri": "amqp://network.demo.lora-ifroglab:password@localhost/network.demo.lora-ifroglab",   // message queue URI
-        "devPath": "/dev/ttyACM0",
+        "devPath": "/dev/serial/by-id/usb-Cypress_Semiconductor_USB-UART_LP-if00",
         "freq": 91500,  // unit is 10kHz
         "power": 0,     // 0~15 for 2~17 dBm
     },
@@ -23,5 +23,10 @@
         "unit": "demo",     // unit code
         "code": "test-app", // application code
         "mqUri": "amqp://application.demo.test-app:password@localhost/application.demo.test-app",   // message queue URI
+    },
+    "devDemo": {
+        "devPath": "/dev/serial/by-id/usb-Cypress_Semiconductor_USB-UART_LP-if00",
+        "freq": 91500,  // unit is 10kHz
+        "power": 0,     // 0~15 for 2~17 dBm
     },
 }

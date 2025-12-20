@@ -24,7 +24,10 @@ use tokio::{
     time,
 };
 
-use super::{DlData, MAX_DATA, UlData, UlDataExt, lora_usb::IfroglabLora};
+use super::{
+    DlData, MAX_DATA, UlData, UlDataExt,
+    lora_usb::{ChipInfo, IfroglabLora},
+};
 
 pub struct Options {
     pub mgr: Arc<Mutex<NetworkMgr>>,
@@ -59,7 +62,7 @@ struct OptionsInner {
     power: u8,
 }
 
-struct RxData {
+struct LoraData {
     node_id: u32,
     payload: Vec<u8>,
 }
@@ -95,15 +98,13 @@ impl LoraTask {
 fn create_event_loop(task: LoraTask) -> JoinHandle<()> {
     task::spawn(async move {
         const FN_NAME: &'static str = "event_loop";
-        let sleep_time = SLEEP_IDLE_MS;
         // Main loop.
-        let (mut port, mut counter) = connect_port(&task).await;
+        let (mut port, _, mut counter) = connect_port(&task).await;
         let mut port_connected = true;
         loop {
-            time::sleep(Duration::from_millis(sleep_time)).await;
             if !port_connected {
                 port_connected = true;
-                (port, counter) = connect_port(&task).await;
+                (port, _, counter) = connect_port(&task).await;
             }
             counter = match port.cmd07_read_data_counter().await {
                 Err(e) => {
@@ -113,7 +114,10 @@ fn create_event_loop(task: LoraTask) -> JoinHandle<()> {
                 }
                 Ok(new_counter) => match counter == new_counter {
                     false => new_counter,
-                    true => continue,
+                    true => {
+                        time::sleep(Duration::from_millis(SLEEP_IDLE_MS)).await;
+                        continue;
+                    }
                 },
             };
             let read_data = match port.cmd06_read_data().await {
@@ -255,20 +259,20 @@ fn create_event_loop(task: LoraTask) -> JoinHandle<()> {
     })
 }
 
-fn parse_rx_data(raw: &[u8]) -> Result<RxData, IoError> {
+fn parse_rx_data(raw: &[u8]) -> Result<LoraData, IoError> {
     if raw.len() < 8 {
         return Err(IoError::from(ErrorKind::InvalidData));
     }
 
     let mut dst = [0u8; 4];
     dst.clone_from_slice(&raw[0..4]);
-    Ok(RxData {
+    Ok(LoraData {
         node_id: u32::from_be_bytes(dst),
         payload: raw[8..].to_vec(),
     })
 }
 
-async fn connect_port(task: &LoraTask) -> (IfroglabLora, u16) {
+async fn connect_port(task: &LoraTask) -> (IfroglabLora, ChipInfo, u16) {
     const FN_NAME: &'static str = "connect_port";
 
     loop {
@@ -279,6 +283,13 @@ async fn connect_port(task: &LoraTask) -> (IfroglabLora, u16) {
                 continue;
             }
             Ok(port) => port,
+        };
+        let chip_info = match port.cmd00_chip_info().await {
+            Err(e) => {
+                error!("[{}] read chip info error: {}", FN_NAME, e);
+                continue;
+            }
+            Ok(info) => info,
         };
         if let Err(e) = port
             .cmd03_set_values(3, task.opts.freq, task.opts.power)
@@ -295,6 +306,6 @@ async fn connect_port(task: &LoraTask) -> (IfroglabLora, u16) {
             Ok(counter) => counter,
         };
         info!("[{}] connected to port", FN_NAME);
-        break (port, counter);
+        break (port, chip_info, counter);
     }
 }
