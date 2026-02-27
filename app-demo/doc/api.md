@@ -93,7 +93,7 @@ Get latest 100 downlink data from the application server.
 
 - **500, 503**: See [Notes](#notes).
 
-## <a name="post_application_dldata"></a>Send downlink data
+## <a name="post_data_dldata"></a>Send downlink data
 
 Send downlink data to a device.
 
@@ -112,7 +112,7 @@ Send downlink data to a device.
             "data": {
                 "networkCode": "lora",
                 "networkAddr": "800012ae",
-                "data": "74657374"
+                "payload": "74657374"
             }
         }
 
