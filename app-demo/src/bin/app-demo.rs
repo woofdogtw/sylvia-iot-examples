@@ -5,14 +5,14 @@ use std::{
     time::Duration,
 };
 
-use axum::{Router, http::StatusCode};
+use axum::{Router, http::StatusCode, routing};
 use axum_server::{self, tls_rustls::RustlsConfig};
 use clap::{Arg as ClapArg, Command};
 use log::{self, error, info};
 use serde::Deserialize;
 use sylvia_iot_sdk::util::{
     logger::{self, LoggerLayer},
-    server_config,
+    server_config, version,
 };
 use tokio::{self, net::TcpListener};
 use tower_http::{cors::CorsLayer, normalize_path::NormalizePathLayer, timeout::TimeoutLayer};
@@ -60,6 +60,10 @@ async fn main() -> std::io::Result<()> {
 
     let app = Router::new()
         .merge(routes::new_service(&state))
+        .route(
+            "/version",
+            routing::get(version::gen_get_version(PROJ_NAME, PROJ_VER)),
+        )
         .layer(TimeoutLayer::with_status_code(
             StatusCode::REQUEST_TIMEOUT,
             Duration::from_secs(60),
