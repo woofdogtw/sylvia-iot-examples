@@ -120,7 +120,7 @@ fn create_event_loop(task: DevTask) -> JoinHandle<()> {
                     if counter != new_counter {
                         let read_data = match port.cmd06_read_data().await {
                             Err(e) => {
-                                error!("[{}] get counter error: {}", FN_NAME, e);
+                                error!("[{}] get data error: {}", FN_NAME, e);
                                 port_connected = false;
                                 continue;
                             }
@@ -131,7 +131,7 @@ fn create_event_loop(task: DevTask) -> JoinHandle<()> {
                         };
                         let rx_data = match parse_rx_data(read_data.data.as_slice()) {
                             Err(e) => {
-                                warn!("[{}] get counter error: {}", FN_NAME, e);
+                                warn!("[{}] parse data error: {}", FN_NAME, e);
                                 continue;
                             }
                             Ok(data) => data,

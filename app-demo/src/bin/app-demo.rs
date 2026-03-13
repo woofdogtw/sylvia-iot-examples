@@ -83,7 +83,7 @@ async fn main() -> std::io::Result<()> {
     if let Some(cert_file) = conf.server.cert_file.as_ref() {
         if let Some(key_file) = conf.server.key_file.as_ref() {
             if let Err(_e) = rustls::crypto::aws_lc_rs::default_provider().install_default() {
-                error!("[{}] init crypto erorr", FN_NAME);
+                error!("[{}] init crypto error", FN_NAME);
                 return Ok(());
             }
             let config = match RustlsConfig::from_pem_file(cert_file, key_file).await {

@@ -305,12 +305,12 @@ impl IfroglabLora {
         if data.len() != 1 {
             return Err(IoError::new(
                 ErrorKind::InvalidData,
-                "cmd-04 should with 1 byte",
+                "cmd-05 should with 1 byte",
             ));
         } else if data[0] != 0x55 {
             return Err(IoError::new(
                 ErrorKind::InvalidData,
-                format!("cmd-04 not response 0x55: 0x{:02x?}", data[0]),
+                format!("cmd-05 not response 0x55: 0x{:02x?}", data[0]),
             ));
         }
 
@@ -411,7 +411,7 @@ impl IfroglabLora {
             // Second chance.
             time::sleep(Duration::from_millis(ACK_SLEEP_MS)).await;
             size = size + self.port.read(&mut self.buff[size..]).await?;
-            if size < len {
+            if size < len + 4 {
                 return Err(IoError::new(
                     ErrorKind::TimedOut,
                     format!("only receive {}/{} bytes", size, len),

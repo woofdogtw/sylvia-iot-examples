@@ -25,23 +25,23 @@ pub const DEF_POWER_STR: &'static str = "0";
 /// To register Clap arguments.
 pub fn reg_args(cmd: Command) -> Command {
     cmd.arg(
-        Arg::new("lora-ifroglab.dev-path")
-            .long("lora-ifroglab.dev-path")
+        Arg::new("dev-demo.dev-path")
+            .long("dev-demo.dev-path")
             .help("Device path such as `/dev/ttyACM0` or `COM1`")
             .num_args(1)
             .default_value(DEF_DEV_PATH),
     )
     .arg(
-        Arg::new("lora-ifroglab.freq")
-            .long("lora-ifroglab.freq")
+        Arg::new("dev-demo.freq")
+            .long("dev-demo.freq")
             .help("Frequency (10kHz). 86000~102000")
             .num_args(1)
             .value_parser(86000..=102000)
             .default_value(DEF_FREQ_STR),
     )
     .arg(
-        Arg::new("lora-ifroglab.power")
-            .long("lora-ifroglab.power")
+        Arg::new("dev-demo.power")
+            .long("dev-demo.power")
             .help("RF power. 0~15 for 2~17 dBm")
             .num_args(1)
             .value_parser(0..=15)
@@ -55,15 +55,15 @@ pub fn reg_args(cmd: Command) -> Command {
 /// again.
 pub fn read_args(args: &ArgMatches) -> Config {
     apply_default(&Config {
-        dev_path: match args.get_one::<String>("lora-ifroglab.dev-path") {
-            None => match env::var("LORA_IFROGLAB_DEV_PATH") {
+        dev_path: match args.get_one::<String>("dev-demo.dev-path") {
+            None => match env::var("DEV_DEMO_DEV_PATH") {
                 Err(_) => None,
                 Ok(v) => Some(v),
             },
             Some(v) => Some(v.clone()),
         },
-        freq: match args.get_one::<i64>("lora-ifroglab.freq") {
-            None => match env::var("LORA_IFROGLAB_FREQ") {
+        freq: match args.get_one::<i64>("dev-demo.freq") {
+            None => match env::var("DEV_DEMO_FREQ") {
                 Err(_) => Some(DEF_FREQ),
                 Ok(v) => match v.parse::<u32>() {
                     Err(_) => Some(DEF_FREQ),
@@ -72,8 +72,8 @@ pub fn read_args(args: &ArgMatches) -> Config {
             },
             Some(v) => Some(*v as u32),
         },
-        power: match args.get_one::<i64>("lora-ifroglab.power") {
-            None => match env::var("LORA_IFROGLAB_POWER") {
+        power: match args.get_one::<i64>("dev-demo.power") {
+            None => match env::var("DEV_DEMO_POWER") {
                 Err(_) => Some(DEF_POWER),
                 Ok(v) => match v.parse::<u8>() {
                     Err(_) => Some(DEF_POWER),

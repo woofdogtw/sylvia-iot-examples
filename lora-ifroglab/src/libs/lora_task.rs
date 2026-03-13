@@ -122,7 +122,7 @@ fn create_event_loop(task: LoraTask) -> JoinHandle<()> {
             };
             let read_data = match port.cmd06_read_data().await {
                 Err(e) => {
-                    error!("[{}] get counter error: {}", FN_NAME, e);
+                    error!("[{}] get data error: {}", FN_NAME, e);
                     port_connected = false;
                     continue;
                 }
@@ -135,7 +135,7 @@ fn create_event_loop(task: LoraTask) -> JoinHandle<()> {
             // Send uplink data to the broker.
             let rx_data = match parse_rx_data(read_data.data.as_slice()) {
                 Err(e) => {
-                    warn!("[{}] get counter error: {}", FN_NAME, e);
+                    warn!("[{}] parse data error: {}", FN_NAME, e);
                     continue;
                 }
                 Ok(data) => data,
@@ -191,18 +191,16 @@ fn create_event_loop(task: LoraTask) -> JoinHandle<()> {
                     status: 1,
                     message: Some(format!("exceed 16-byte hexadecimal")),
                 };
+                if let Err(e) = task
+                    .queue_rsc
+                    .mgr
+                    .lock()
+                    .unwrap()
+                    .send_dldata_result(&result)
                 {
-                    if let Err(e) = task
-                        .queue_rsc
-                        .mgr
-                        .lock()
-                        .unwrap()
-                        .send_dldata_result(&result)
-                    {
-                        error!("[{}] send result message error: {}", FN_NAME, e);
-                        continue;
-                    }
+                    error!("[{}] send result message error: {}", FN_NAME, e);
                 }
+                continue;
             } else if let Err(e) =
                 hex::decode_to_slice(data.data.as_str(), &mut buff[8..8 + data_len / 2])
             {

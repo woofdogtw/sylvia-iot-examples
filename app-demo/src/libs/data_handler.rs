@@ -102,7 +102,7 @@ impl EventHandler for MgrHandler {
         }
         if !found {
             warn!(
-                "[{}] no data for correletion ID {}",
+                "[{}] no data for correlation ID {}",
                 FN_NAME, data.correlation_id
             );
         }
