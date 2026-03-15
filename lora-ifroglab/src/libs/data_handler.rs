@@ -2,12 +2,13 @@
 
 use std::{
     collections::{HashMap, VecDeque},
+    error::Error as StdError,
     sync::{Arc, Mutex},
 };
 
 use async_trait::async_trait;
 use chrono::Utc;
-use log::{error, info};
+use log::{error, info, warn};
 use sylvia_iot_sdk::{
     mq::{
         MgrStatus,
@@ -33,6 +34,10 @@ impl MgrHandler {
 
 #[async_trait]
 impl EventHandler for MgrHandler {
+    async fn on_error(&self, _mgr: &NetworkMgr, err: Box<dyn StdError + Send + Sync>) {
+        warn!("[MgrHandler::on_error] error: {}", err);
+    }
+
     async fn on_status_change(&self, _mgr: &NetworkMgr, _status: MgrStatus) {}
 
     async fn on_dldata(&self, mgr: &NetworkMgr, data: Box<NetDlData>) -> Result<(), ()> {

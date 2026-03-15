@@ -305,6 +305,7 @@ fn reset_lps22hb(dev: &mut LinuxI2CDevice) -> Result<(), Box<dyn StdError>> {
         if buf & 0x04 == 0 {
             break;
         }
+        _ = time::sleep(Duration::from_secs(1));
     }
 
     Ok(())
